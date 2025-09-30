@@ -7,12 +7,12 @@
 [build.environment]
   PYTHON_VERSION = "3.12.3"
 
+[functions]
+  external_node_modules = ["fastapi", "pandas", "numpy", "scikit-learn", "google-generativeai", "python-dotenv", "uvicorn", "pydantic", "requests"]
+  included_files = ["backend/netlify/functions/api.py"]
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
-
-[functions]
-  external_node_modules = ["fastapi", "pandas", "numpy", "scikit-learn", "google-generativeai", "python-dotenv", "uvicorn", "pydantic", "requests"]
-  node_bundler = "esbuild"
