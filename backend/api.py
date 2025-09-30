@@ -1,6 +1,3 @@
-import sys
-import json
-import asyncio
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,8 +9,6 @@ import io
 import os
 import logging
 from dotenv import load_dotenv
-from starlette.requests import Request
-from starlette.datastructures import UploadFile as StarletteUploadFile
 
 # Load .env file
 load_dotenv()
@@ -93,7 +88,7 @@ async def upload_csv(file: UploadFile):
     contamination = min(0.05, 10 / len(df)) if len(df) > 0 else 0.05
     model = IsolationForest(contamination=contamination, random_state=42)
     df["anomaly_score"] = model.fit_predict(features)
-    
+
     # Rule-based filtering
     amount_threshold = max(10000, df[["debit", "credit"]].quantile(0.95).max())  # 95th percentile or $10,000
     imbalance_threshold = 5000  # For debit/credit imbalance
@@ -105,7 +100,7 @@ async def upload_csv(file: UploadFile):
             ((df["credit"] > imbalance_threshold) & (df["debit"] == 0))
         )
     )
-    
+
     anomalies = df[df["is_significant_anomaly"]][["items", "debit", "credit"]]
     logger.info(f"Detected {len(anomalies)} significant anomalies: {anomalies.to_dict(orient='records')}")
     anomalies = anomalies[["items", "debit", "credit"]].to_dict(orient="records")
@@ -144,47 +139,3 @@ async def upload_csv(file: UploadFile):
         "anomalies": anomalies,
         "recommendations": recommendations
     })
-
-async def main():
-    # Read input from stdin (sent by api.js)
-    input_data = sys.stdin.read()
-    event = json.loads(input_data)
-
-    # Create a Starlette Request object
-    scope = {
-        "type": "http",
-        "method": event["httpMethod"],
-        "path": event["path"],
-        "headers": event.get("headers", {}),
-        "query_string": event.get("queryStringParameters", {}),
-        "body": event.get("body", "")
-    }
-    request = Request(scope)
-
-    # Handle file upload for POST /upload-csv
-    if event["httpMethod"] == "POST" and event["path"].endswith("/upload-csv"):
-        content_type = event["headers"].get("content-type", "").lower()
-        if "multipart/form-data" in content_type:
-            # Simulate file upload from body (multipart/form-data)
-            file_content = event["body"]  # Adjust for actual multipart parsing
-            file = StarletteUploadFile(
-                filename="uploaded.csv",
-                file=io.BytesIO(file_content.encode() if isinstance(file_content, str) else file_content),
-                content_type="text/csv"
-            )
-            response = await upload_csv(file)
-        else:
-            response = {"error": "Invalid content type"}
-    else:
-        response = {"error": "Invalid request"}
-
-    # Output JSON response to stdout
-    print(json.dumps({
-        "statusCode": 200 if "error" not in response else 400,
-        "body": response,
-        "headers": {"Content-Type": "application/json"}
-    }))
-    sys.stdout.flush()
-
-if __name__ == "__main__":
-    asyncio.run(main())

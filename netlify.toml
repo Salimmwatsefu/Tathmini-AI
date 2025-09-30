@@ -1,18 +1,10 @@
 [build]
   base = "."
-  command = "cd frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt"
+  command = "cd frontend && npm install && npm run build"
   publish = "frontend/dist"
-  functions = "backend/netlify/functions"
-
-[build.environment]
-  PYTHON_VERSION = "3.12"
-
-[functions]
-  included_files = ["backend/netlify/functions/api.py", "backend/netlify/functions/api.js"]
-  external_node_modules = ["child_process"]
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "https://tathmini-ai-backend.onrender.com/:splat"
   status = 200
   force = true
