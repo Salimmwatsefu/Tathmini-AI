@@ -1,4 +1,6 @@
-
+import sys
+import json
+import asyncio
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +12,8 @@ import io
 import os
 import logging
 from dotenv import load_dotenv
+from starlette.requests import Request
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 # Load .env file
 load_dotenv()
@@ -25,7 +29,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://tathmini-ai.netlify.app" 
+        "https://tathmini-ai.netlify.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -107,7 +111,7 @@ async def upload_csv(file: UploadFile):
     anomalies = anomalies[["items", "debit", "credit"]].to_dict(orient="records")
     anomaly_summary = f"{len(anomalies)} significant anomalies detected" if anomalies else "No significant anomalies detected"
 
-    # AI Recommendations
+    # AI Recommendations with Gemini 2.5 Flash
     gemini_api_key = os.getenv("GEMINI_API_KEY")
     if not gemini_api_key:
         logger.error("GEMINI_API_KEY not found in environment variables")
@@ -140,3 +144,47 @@ async def upload_csv(file: UploadFile):
         "anomalies": anomalies,
         "recommendations": recommendations
     })
+
+async def main():
+    # Read input from stdin (sent by api.js)
+    input_data = sys.stdin.read()
+    event = json.loads(input_data)
+
+    # Create a Starlette Request object
+    scope = {
+        "type": "http",
+        "method": event["httpMethod"],
+        "path": event["path"],
+        "headers": event.get("headers", {}),
+        "query_string": event.get("queryStringParameters", {}),
+        "body": event.get("body", "")
+    }
+    request = Request(scope)
+
+    # Handle file upload for POST /upload-csv
+    if event["httpMethod"] == "POST" and event["path"].endswith("/upload-csv"):
+        content_type = event["headers"].get("content-type", "").lower()
+        if "multipart/form-data" in content_type:
+            # Simulate file upload from body (multipart/form-data)
+            file_content = event["body"]  # Adjust for actual multipart parsing
+            file = StarletteUploadFile(
+                filename="uploaded.csv",
+                file=io.BytesIO(file_content.encode() if isinstance(file_content, str) else file_content),
+                content_type="text/csv"
+            )
+            response = await upload_csv(file)
+        else:
+            response = {"error": "Invalid content type"}
+    else:
+        response = {"error": "Invalid request"}
+
+    # Output JSON response to stdout
+    print(json.dumps({
+        "statusCode": 200 if "error" not in response else 400,
+        "body": response,
+        "headers": {"Content-Type": "application/json"}
+    }))
+    sys.stdout.flush()
+
+if __name__ == "__main__":
+    asyncio.run(main())

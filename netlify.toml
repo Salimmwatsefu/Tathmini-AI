@@ -5,11 +5,11 @@
   functions = "backend/netlify/functions"
 
 [build.environment]
-  PYTHON_VERSION = "3.12.3"
+  PYTHON_VERSION = "3.12"
 
 [functions]
-  external_node_modules = ["fastapi", "pandas", "numpy", "scikit-learn", "google-generativeai", "python-dotenv", "uvicorn", "pydantic", "requests"]
-  included_files = ["backend/netlify/functions/api.py"]
+  included_files = ["backend/netlify/functions/api.py", "backend/netlify/functions/api.js"]
+  external_node_modules = ["child_process"]
 
 [[redirects]]
   from = "/api/*"
