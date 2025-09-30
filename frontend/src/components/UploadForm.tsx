@@ -68,7 +68,7 @@ function UploadForm() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("https://tathmini-ai.netlify.app/api/upload-csv", {
+      const response = await fetch("https://tathmini-ai-backend.onrender.com/upload-csv", {
         method: "POST",
         body: formData,
       });
