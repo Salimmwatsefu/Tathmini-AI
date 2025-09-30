@@ -25,7 +25,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://audit-app-frontend.vercel.app"  # Replace with your Vercel frontend URL
+        "https://tathmini-ai.netlify.app" 
     ],
     allow_credentials=True,
     allow_methods=["*"],
