@@ -1,6 +1,11 @@
 [build]
-  command = "pip install -r requirements.txt"
-  functions = "netlify/functions"
+  base = "."
+  command = "cd frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt"
+  publish = "frontend/dist"
+  functions = "backend/netlify/functions"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
 
 [[redirects]]
   from = "/api/*"
